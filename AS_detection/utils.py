@@ -8,10 +8,10 @@ import tqdm
 import matplotlib.pyplot as plt
 
 from copy import deepcopy
-from sklearn.metrics import roc_curve, precision_recall_curve, average_precision_score, roc_auc_score, accuracy_score, balanced_accuracy_score, precision_recall_fscore_support, matthews_corrcoef, f1_score, confusion_matrix, classification_report
+
+from mlxtend.plotting import plot_confusion_matrix
 from sklearn import metrics
 from sklearn.preprocessing import LabelBinarizer
-from mlxtend.plotting import plot_confusion_matrix
 
 def train(model, device, loss_fxn, optimizer, data_loader, history, epoch, model_dir):
     """Train model to classify severe AS for one epoch.
@@ -67,41 +67,41 @@ def train(model, device, loss_fxn, optimizer, data_loader, history, epoch, model
     
     video_label_df = pd.DataFrame({'y_true': np.concatenate(y_true).ravel(), 'y_hat': np.concatenate(y_hat).ravel(), 'acc_num': np.concatenate(acc_nums).ravel()})
 
-    patient_label_df = video_label_df.groupby(by=['acc_num']).agg({'y_true': np.mean, 'y_hat': np.mean})
+    study_label_df = video_label_df.groupby(by=['acc_num']).agg({'y_true': np.mean, 'y_hat': np.mean})
 
     y_true = video_label_df['y_true']
     y_hat = video_label_df['y_hat']
 
     # AUROC
-    auroc = roc_auc_score(y_true, y_hat)
-    pr, re, _ = precision_recall_curve(y_true, y_hat)
+    auroc = metrics.roc_auc_score(y_true, y_hat)
+    pr, re, _ = metrics.precision_recall_curve(y_true, y_hat)
     aupr = metrics.auc(re, pr)
 
     # Other metrics
-    acc = accuracy_score(y_true, y_hat.round())
-    b_acc = balanced_accuracy_score(y_true, y_hat.round())
-    mcc = matthews_corrcoef(y_true, y_hat.round())
-    pr, re, f1, _ = precision_recall_fscore_support(y_true, y_hat.round(), average='binary')
+    acc = metrics.accuracy_score(y_true, y_hat.round())
+    b_acc = metrics.balanced_accuracy_score(y_true, y_hat.round())
+    mcc = metrics.matthews_corrcoef(y_true, y_hat.round())
+    pr, re, f1, _ = metrics.precision_recall_fscore_support(y_true, y_hat.round(), average='binary')
 
     out_str = f'[VIDEO LEVEL]   AUROC: {auroc:.3f} | AUPR: {aupr:.3f} | Acc: {acc:.3f} | BAcc: {b_acc:.3f} | MCC: {mcc:.3f} | Precision: {pr:.3f} | Recall: {re:.3f} | F1: {f1:.3f}'
     print(out_str)
 
-    ## REPEAT FOR PATIENT LEVEL METRICS ##
-    y_true = patient_label_df['y_true']
-    y_hat = patient_label_df['y_hat']
+    ## REPEAT FOR STUDY LEVEL METRICS ##
+    y_true = study_label_df['y_true']
+    y_hat = study_label_df['y_hat']
 
     # AUROC
-    auroc = roc_auc_score(y_true, y_hat)
-    pr, re, _ = precision_recall_curve(y_true, y_hat)
+    auroc = metrics.roc_auc_score(y_true, y_hat)
+    pr, re, _ = metrics.precision_recall_curve(y_true, y_hat)
     aupr = metrics.auc(re, pr)
 
     # Other metrics
-    acc = accuracy_score(y_true, y_hat.round())
-    b_acc = balanced_accuracy_score(y_true, y_hat.round())
-    mcc = matthews_corrcoef(y_true, y_hat.round())
-    pr, re, f1, _ = precision_recall_fscore_support(y_true, y_hat.round(), average='binary')
+    acc = metrics.accuracy_score(y_true, y_hat.round())
+    b_acc = metrics.balanced_accuracy_score(y_true, y_hat.round())
+    mcc = metrics.matthews_corrcoef(y_true, y_hat.round())
+    pr, re, f1, _ = metrics.precision_recall_fscore_support(y_true, y_hat.round(), average='binary')
 
-    out_str = f'[PATIENT LEVEL] AUROC: {auroc:.3f} | AUPR: {aupr:.3f} | Acc: {acc:.3f} | BAcc: {b_acc:.3f} | MCC: {mcc:.3f} | Precision: {pr:.3f} | Recall: {re:.3f} | F1: {f1:.3f}'
+    out_str = f'[STUDY LEVEL] AUROC: {auroc:.3f} | AUPR: {aupr:.3f} | Acc: {acc:.3f} | BAcc: {b_acc:.3f} | MCC: {mcc:.3f} | Precision: {pr:.3f} | Recall: {re:.3f} | F1: {f1:.3f}'
     print(out_str)
 
     # Append metrics to history df
@@ -171,41 +171,41 @@ def validate(model, device, loss_fxn, optimizer, data_loader, history, epoch, mo
 
     video_label_df = pd.DataFrame({'y_true': np.concatenate(y_true).ravel(), 'y_hat': np.concatenate(y_hat).ravel(), 'acc_num': np.concatenate(acc_nums).ravel()})
 
-    patient_label_df = video_label_df.groupby(by=['acc_num']).agg({'y_true': np.mean, 'y_hat': np.mean})
+    study_label_df = video_label_df.groupby(by=['acc_num']).agg({'y_true': np.mean, 'y_hat': np.mean})
 
     y_true = video_label_df['y_true']
     y_hat = video_label_df['y_hat']
 
     # AUROC
-    auroc = roc_auc_score(y_true, y_hat)
-    pr, re, _ = precision_recall_curve(y_true, y_hat)
+    auroc = metrics.roc_auc_score(y_true, y_hat)
+    pr, re, _ = metrics.precision_recall_curve(y_true, y_hat)
     aupr = metrics.auc(re, pr)
 
     # Other metrics
-    acc = accuracy_score(y_true, y_hat.round())
-    b_acc = balanced_accuracy_score(y_true, y_hat.round())
-    mcc = matthews_corrcoef(y_true, y_hat.round())
-    pr, re, f1, _ = precision_recall_fscore_support(y_true, y_hat.round(), average='binary')
+    acc = metrics.accuracy_score(y_true, y_hat.round())
+    b_acc = metrics.balanced_accuracy_score(y_true, y_hat.round())
+    mcc = metrics.matthews_corrcoef(y_true, y_hat.round())
+    pr, re, f1, _ = metrics.precision_recall_fscore_support(y_true, y_hat.round(), average='binary')
 
     out_str = f'[VIDEO LEVEL]   AUROC: {auroc:.3f} | AUPR: {aupr:.3f} | Acc: {acc:.3f} | BAcc: {b_acc:.3f} | MCC: {mcc:.3f} | Precision: {pr:.3f} | Recall: {re:.3f} | F1: {f1:.3f}'
     print(out_str)
 
-    ## REPEAT FOR PATIENT LEVEL METRICS ##
-    y_true = patient_label_df['y_true']
-    y_hat = patient_label_df['y_hat']
+    ## REPEAT FOR STUDY LEVEL METRICS ##
+    y_true = study_label_df['y_true']
+    y_hat = study_label_df['y_hat']
 
     # AUROC
-    auroc = roc_auc_score(y_true, y_hat)
-    pr, re, _ = precision_recall_curve(y_true, y_hat)
+    auroc = metrics.roc_auc_score(y_true, y_hat)
+    pr, re, _ = metrics.precision_recall_curve(y_true, y_hat)
     aupr = metrics.auc(re, pr)
 
     # Other metrics
-    acc = accuracy_score(y_true, y_hat.round())
-    b_acc = balanced_accuracy_score(y_true, y_hat.round())
-    mcc = matthews_corrcoef(y_true, y_hat.round())
-    pr, re, f1, _ = precision_recall_fscore_support(y_true, y_hat.round(), average='binary')
+    acc = metrics.accuracy_score(y_true, y_hat.round())
+    b_acc = metrics.balanced_accuracy_score(y_true, y_hat.round())
+    mcc = metrics.matthews_corrcoef(y_true, y_hat.round())
+    pr, re, f1, _ = metrics.precision_recall_fscore_support(y_true, y_hat.round(), average='binary')
 
-    out_str = f'[PATIENT LEVEL] AUROC: {auroc:.3f} | AUPR: {aupr:.3f} | Acc: {acc:.3f} | BAcc: {b_acc:.3f} | MCC: {mcc:.3f} | Precision: {pr:.3f} | Recall: {re:.3f} | F1: {f1:.3f}'
+    out_str = f'[STUDY LEVEL] AUROC: {auroc:.3f} | AUPR: {aupr:.3f} | Acc: {acc:.3f} | BAcc: {b_acc:.3f} | MCC: {mcc:.3f} | Precision: {pr:.3f} | Recall: {re:.3f} | F1: {f1:.3f}'
     print(out_str)
 
     # Append metrics to history df
@@ -259,11 +259,12 @@ def evaluate(model, device, loss_fxn, data_loader, split, classes, history, mode
     running_loss = 0.
     y_true, y_hat = [], []
     acc_nums = []
-    plax_probs = []
+    video_nums = []
     with torch.no_grad():
         for i, batch in pbar:
             x, y = batch['x'].to(device), batch['y'].to(device)
             acc_num = batch['acc_num']
+            video_num = batch['video_num']
 
             # Forward pass
             out = torch.stack([model(x[:, :, clip, :, :, :]) for clip in range(x.shape[2])], dim=0)
@@ -280,51 +281,53 @@ def evaluate(model, device, loss_fxn, data_loader, split, classes, history, mode
             y_true.append(y.detach().cpu().numpy())
             y_hat.append(out.detach().cpu().numpy())
             acc_nums.append(acc_num)
+            video_nums.append(video_num)
 
             pbar.set_postfix({'loss': running_loss / (i + 1)}) #, 'b_acc': balanced_acc})
 
-    video_label_df = pd.DataFrame({'y_true': np.concatenate(y_true).ravel(), 'y_hat': np.concatenate(y_hat).ravel(), 'acc_num': np.concatenate(acc_nums).ravel()})
+    video_label_df = pd.DataFrame({'y_true': np.concatenate(y_true).ravel(), 'y_hat': np.concatenate(y_hat).ravel(),
+                                   'acc_num': np.concatenate(acc_nums).ravel(), 'video_num': np.concatenate(video_nums).ravel()})
 
-    patient_label_df = video_label_df.groupby(by=['acc_num']).agg({'y_true': np.mean, 'y_hat': np.mean})
+    study_label_df = video_label_df.groupby(by=['acc_num']).agg({'y_true': np.mean, 'y_hat': np.mean})
 
     y_true = video_label_df['y_true']
     y_hat = video_label_df['y_hat']
 
     # AUROC
-    auroc = roc_auc_score(y_true, y_hat)
-    pr, re, _ = precision_recall_curve(y_true, y_hat)
+    auroc = metrics.roc_auc_score(y_true, y_hat)
+    pr, re, _ = metrics.precision_recall_curve(y_true, y_hat)
     aupr = metrics.auc(re, pr)
 
     # Other metrics
-    acc = accuracy_score(y_true, y_hat.round())
-    b_acc = balanced_accuracy_score(y_true, y_hat.round())
-    mcc = matthews_corrcoef(y_true, y_hat.round())
-    pr, re, f1, _ = precision_recall_fscore_support(y_true, y_hat.round(), average='binary')
-    cls_report = classification_report(y_true, y_hat.round(), target_names=classes, digits=3)
+    acc = metrics.accuracy_score(y_true, y_hat.round())
+    b_acc = metrics.balanced_accuracy_score(y_true, y_hat.round())
+    mcc = metrics.matthews_corrcoef(y_true, y_hat.round())
+    pr, re, f1, _ = metrics.precision_recall_fscore_support(y_true, y_hat.round(), average='binary')
+    cls_report = metrics.classification_report(y_true, y_hat.round(), target_names=classes, digits=3)
     
     video_out_str = f'[VIDEO LEVEL]   AUROC: {auroc:.3f} | AUPR: {aupr:.3f} | Acc: {acc:.3f} | BAcc: {b_acc:.3f} | MCC: {mcc:.3f} | Precision: {pr:.3f} | Recall: {re:.3f} | F1: {f1:.3f}'
     video_out_str += f'\n{cls_report}'
     print(video_out_str)
 
-    ## REPEAT FOR PATIENT LEVEL METRICS ##
-    y_true = patient_label_df['y_true']
-    y_hat = patient_label_df['y_hat']
+    ## REPEAT FOR STUDY LEVEL METRICS ##
+    y_true = study_label_df['y_true']
+    y_hat = study_label_df['y_hat']
 
     # AUROC
-    fpr, tpr, _ = roc_curve(y_true, y_hat)
-    auroc = roc_auc_score(y_true, y_hat)
-    prs, res, thrs = precision_recall_curve(y_true, y_hat)
+    fpr, tpr, _ = metrics.roc_curve(y_true, y_hat)
+    auroc = metrics.roc_auc_score(y_true, y_hat)
+    prs, res, thrs = metrics.precision_recall_curve(y_true, y_hat)
     aupr = metrics.auc(res, prs)
 
     # Other metrics
-    acc = accuracy_score(y_true, y_hat.round())
-    b_acc = balanced_accuracy_score(y_true, y_hat.round())
-    mcc = matthews_corrcoef(y_true, y_hat.round())
-    pr, re, f1, _ = precision_recall_fscore_support(y_true, y_hat.round(), average='binary')
-    conf_mat = confusion_matrix(y_true, y_hat.round())
-    cls_report = classification_report(y_true, y_hat.round(), target_names=classes, digits=3)
+    acc = metrics.accuracy_score(y_true, y_hat.round())
+    b_acc = metrics.balanced_accuracy_score(y_true, y_hat.round())
+    mcc = metrics.matthews_corrcoef(y_true, y_hat.round())
+    pr, re, f1, _ = metrics.precision_recall_fscore_support(y_true, y_hat.round(), average='binary')
+    conf_mat = metrics.confusion_matrix(y_true, y_hat.round())
+    cls_report = metrics.classification_report(y_true, y_hat.round(), target_names=classes, digits=3)
 
-    out_str = f'[PATIENT LEVEL] AUROC: {auroc:.3f} | AUPR: {aupr:.3f} | Acc: {acc:.3f} | BAcc: {b_acc:.3f} | MCC: {mcc:.3f} | Precision: {pr:.3f} | Recall: {re:.3f} | F1: {f1:.3f}'
+    out_str = f'[STUDY LEVEL] AUROC: {auroc:.3f} | AUPR: {aupr:.3f} | Acc: {acc:.3f} | BAcc: {b_acc:.3f} | MCC: {mcc:.3f} | Precision: {pr:.3f} | Recall: {re:.3f} | F1: {f1:.3f}'
     out_str += f'\n{cls_report}'
 
     # Get threshold that maximizes F1
@@ -354,7 +357,8 @@ def evaluate(model, device, loss_fxn, data_loader, split, classes, history, mode
     print(out_str)
 
     # SAVE OUTPUT
-    patient_label_df.to_csv(os.path.join(model_dir, f'{split}_preds.csv'))
+    video_label_df.to_csv(os.path.join(model_dir, f'{split}_video_preds.csv'))  # video-level predictions
+    study_label_df.to_csv(os.path.join(model_dir, f'{split}_preds.csv'))  # study-level predictions
 
     # Plot loss learing curves
     fig, ax = plt.subplots(1, 1, figsize=(6, 6))
