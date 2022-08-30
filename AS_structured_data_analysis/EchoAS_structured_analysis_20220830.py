@@ -5,6 +5,7 @@
 import numpy as np
 import pandas as pd
 
+from scipy import stats
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -189,7 +190,6 @@ forplot = merged_test[merged_test["error_type"].isin(list)]
 
 # %%
 # Get t-test P value for LVEF
-from scipy import stats
 forplot_ef = forplot.dropna(subset=["EF"])
 stats.mannwhitneyu(forplot_ef['EF'][forplot_ef['error_type'] == 'tn'], forplot_ef['EF'][forplot_ef['error_type'] == 'fp'])
 
@@ -198,7 +198,6 @@ forplot_ef[["EF", "error_type"]].groupby('error_type').describe()
 
 # %%
 # Get t-test P value for AV peak velocity
-from scipy import stats
 forplot_av = forplot.dropna(subset=["AV Pk Vel (m/s)"])
 stats.mannwhitneyu(forplot_av['AV Pk Vel (m/s)'][forplot_av['error_type'] == 'tn'], forplot_av['AV Pk Vel (m/s)'][forplot_av['error_type'] == 'fp'])
 
@@ -207,7 +206,6 @@ forplot_av[["AV Pk Vel (m/s)", "error_type"]].groupby('error_type').describe()
 
 # %%
 # Get t-test P value for AV mean gradient
-from scipy import stats
 forplot_av = forplot.dropna(subset=["AV Mn Grad (mmHg)"])
 stats.mannwhitneyu(forplot_av['AV Mn Grad (mmHg)'][forplot_av['error_type'] == 'tn'], forplot_av['AV Mn Grad (mmHg)'][forplot_av['error_type'] == 'fp'])
 
@@ -216,7 +214,6 @@ forplot_av[["AV Mn Grad (mmHg)", "error_type"]].groupby('error_type').describe()
 
 # %%
 # Get t-test P value for AVA by cont VTI
-from scipy import stats
 forplot_av = forplot.dropna(subset=["AVA Cont VTI"])
 stats.mannwhitneyu(forplot_av['AVA Cont VTI'][forplot_av['error_type'] == 'tn'], forplot_av['AVA Cont VTI'][forplot_av['error_type'] == 'fp'])
 
