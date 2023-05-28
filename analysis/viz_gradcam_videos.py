@@ -9,17 +9,17 @@ import numpy as np
 
 from scipy.ndimage import zoom
 
-from utils import load_video, get_date
+from utils import get_date, load_video
 
 def main(args):
     files = [
-        'E105457874_0.avi',
-        'E108086538_2.avi',
-        'E103830926_2.avi',
-        'E107482161_0.avi',
-        'E109469211_0.avi',
-        'E104903081_0.avi',
-        'E110414652_0.avi'
+        'E106571532_2.avi',
+        'E108465271_0.avi',
+        'E106836599_1.avi',
+        'E109967119_4.avi',
+        'E104619394_1.avi',
+        'E104792228_0.avi',
+        'E108960647_1.avi'
     ]
 
     out_dir = f'{get_date()}_gradcam_video_viz'
@@ -29,17 +29,17 @@ def main(args):
     os.mkdir(out_dir)
 
     for i in range(len(files)):
-        att_maps = []
-        for gcam_dir in args.gradcam_dirs:
-            att_map = nib.load(os.path.join(gcam_dir, f'attention_map_{i}_0_0.nii.gz')).get_fdata()
-            att_map = zoom(att_map, (112/att_map.shape[0], 112/att_map.shape[1], 32/att_map.shape[2]))
-            att_map = cv2.normalize(att_map, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
-            att_maps.append(att_map)
-        att_map = np.concatenate(att_maps, axis=1)
-
         # Read in video
         x = load_video(os.path.join(args.data_dir, 'videos', files[i]))
         x = np.transpose(x, (1, 2, 3, 0))
+
+        att_maps = []
+        for gcam_dir in args.gradcam_dirs:
+            att_map = nib.load(os.path.join(gcam_dir, 'layer4', f'attention_map_{i}_0_0.nii.gz')).get_fdata()
+            att_map = zoom(att_map, (112/att_map.shape[0], 112/att_map.shape[1], x.shape[3]/att_map.shape[2]))
+            att_map = cv2.normalize(att_map, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
+            att_maps.append(att_map)
+        att_map = np.concatenate(att_maps, axis=1)
 
         if i == 5:
             classification = 'tn'

@@ -9,16 +9,18 @@ import numpy as np
 
 from scipy.ndimage import zoom
 
+from utils import get_date, load_video
+
 def main(args):
     # 5 most confident true positives, most confident (lowest probability) true negative, + most confident false positive
     files = [
-        'E105457874_0.avi',
-        'E108086538_2.avi',
-        'E103830926_2.avi',
-        'E107482161_0.avi',
-        'E109469211_0.avi',
-        'E104903081_0.avi',
-        'E110414652_0.avi'
+        'E106571532_2.avi',
+        'E108465271_0.avi',
+        'E106836599_1.avi',
+        'E109967119_4.avi',
+        'E104619394_1.avi',
+        'E104792228_0.avi',
+        'E108960647_1.avi'
     ]
 
     out_dir = f'{get_date()}_{args.model_name}_gradcam_viz'
@@ -29,10 +31,10 @@ def main(args):
 
     for i in range(len(files)):
         if len(args.gradcam_dir) == 1:
-            nib.load(os.path.join(args.gradcam_dir[0], f'attention_map_{i}_0_0.nii.gz')).get_fdata()
+            att_map = nib.load(os.path.join(args.gradcam_dir[0], 'layer4', f'attention_map_{i}_0_0.nii.gz')).get_fdata()
         else:
             # Load and stack each model's attention map along zeroth axis
-            att_map = [nib.load(os.path.join(gcam_dir, f'attention_map_{i}_0_0.nii.gz')).get_fdata() for gcam_dir in args.gradcam_dir]
+            att_map = [nib.load(os.path.join(gcam_dir, 'layer4', f'attention_map_{i}_0_0.nii.gz')).get_fdata() for gcam_dir in args.gradcam_dir]
 
             # Fuse attention maps from each model for a given echo video
             att_map = np.array(att_map).mean(0)
@@ -52,9 +54,9 @@ def main(args):
             classification = 'tp'
 
         # Save raw saliency map video
-        fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         fps = 30
-        out = cv2.VideoWriter(os.path.join(out_dir, f'{get_date()}_video_{classification}_{args.model_name}_gradcam_{i}.avi'), fourcc, fps, (112, 112), True)
+        out = cv2.VideoWriter(os.path.join(out_dir, f'{get_date()}_video_{classification}_{args.model_name}_gradcam_{i}.mp4'), fourcc, fps, (112, 112), True)
 
         # Convert att_map to uint8
         att_map = cv2.normalize(att_map, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)

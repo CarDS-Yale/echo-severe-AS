@@ -6,67 +6,67 @@ import numpy as np
 import pandas as pd
 
 from sklearn.metrics import precision_recall_curve, auc, roc_curve, roc_auc_score
+from math import ceil
+from utils import get_date, bootstrap_threshold
 
-from utils import get_date
+np.random.seed(0)
 
-for split in ['test', 'ext_test']:
-    MODELS = ['SSL', 'Kinetics-400', 'Random', 'Ensemble']
+# With early stopping by val AUC
+model_dirs = [
+    '/home/gih5/echo-severe-AS/ssl_ft_results/3dresnet18_pretr_ssl-100222_mi-simclr+fo_ssl_aug_clip-len-16-stride-1_num-clips-4_cw_lr-0.1_30ep_patience-5_bs-88_ls-0.1_drp-0.25_val-auc',
+    '/home/gih5/echo-severe-AS/kinetics_ft_results/3dresnet18_pretr_aug_clip-len-16-stride-1_num-clips-4_cw_lr-0.0001_30ep_patience-5_bs-88_ls-0.1_drp-0.25_val-auc',
+    '/home/gih5/echo-severe-AS/random_ft_results/3dresnet18_rand_aug_clip-len-16-stride-1_num-clips-4_cw_lr-0.0001_30ep_patience-5_bs-88_ls-0.1_drp-0.25_val-auc'
+]
+data_dir = '/home/gih5/mounts/nfs_echo_yale/031522_echo_avs_preprocessed'
 
-    model_dirs = [
-        '/home/gih5/echo_avs/simclr+tshuffle_ft_results/3dresnet18_pretr_ssl-simclr_bs-196x2_clip-len-4_stride-1_tau-0.05_lr-0.1_pad-hflip-rot+temporal-correction_aug-heavy_clip-len-16-stride-1_num-clips-4_cw_lr-0.1_30ep_patience-5_bs-88_ls-0.1_drp-0.25',
-        '/home/gih5/echo_avs/kinetics_ft_results/3dresnet18_pretr_aug-heavy_clip-len-16-stride-1_num-clips-4_cw_lr-0.0001_30ep_patience-5_bs-88_ls-0.1_drp-0.25',
-        '/home/gih5/echo_avs/rand_ft_results/3dresnet18_rand_aug-heavy_clip-len-16-stride-1_num-clips-4_cw_lr-0.0001_30ep_patience-5_bs-88_ls-0.1_drp-0.25',
-    ]
+metrics = ['auroc', 'aupr']
+threshold = 0.6075266666666667
+alpha = 0.95
+n_samples = 10000
 
-    roc_dict = {}
-    for model in MODELS:
-        roc_dict[model] = {}
+for cohort in ['051823_full_test_2016-2020', '100122_test_2021', 'cedars']:
+    if cohort == 'cedars':
+        pred_df = pd.read_csv('/home/gih5/echo-severe-AS/YaleASInference_2-28-23_clean.csv')
+        pred_df = pred_df[['study_uid', 'ensemble', 'SevereAS']]
+        
+        # Average video-level predictions into study-level predictions
+        pred_df = pred_df.groupby('study_uid', as_index=False).agg({'ensemble': np.mean, 'SevereAS': 'first'}).reset_index(drop=True)
 
-    pr_dict = {}
-    for model in MODELS:
-        pr_dict[model] = {}
+        acc_num_df = pd.read_csv(f'052123_{cohort}_prevalence-0.015_cohort.csv')
+        new_acc_nums = acc_num_df['acc_num'].values
 
-    for model_name, model_dir in zip(MODELS, model_dirs):
-        pred_df = pd.read_csv(os.path.join(model_dir, f'{split}_preds.csv'))
+        pred_df = pred_df[pred_df['study_uid'].isin(new_acc_nums)].reset_index(drop=True)
 
-        fprs, tprs, _ = roc_curve(pred_df['y_true'], pred_df['y_hat'])
+        pred_df = pred_df.rename(columns={'study_uid': 'acc_num', 'ensemble': 'y_hat', 'SevereAS': 'y_true'})
+    else:
+        y_hats = []
+        for model_dir in model_dirs:
+            pred_df = pd.read_csv(os.path.join(model_dir, f'{cohort}_video_preds.csv'))
 
-        precs, recalls, thrs = precision_recall_curve(pred_df['y_true'], pred_df['y_hat'])
+            pred_df = pred_df.groupby('acc_num', as_index=False).agg({'y_hat': np.mean, 'y_true': 'first'}).reset_index(drop=True)
 
-        roc_dict[model_name]['fprs'] = fprs
-        roc_dict[model_name]['tprs'] = tprs
-        roc_dict[model_name]['auc'] = auc(fprs, tprs)
+            y_hats.append(pred_df['y_hat'])
+        pred_df['y_hat'] = np.array(y_hats).mean(axis=0)  # ensemble across models
 
-        pr_dict[model_name]['precs'] = precs
-        pr_dict[model_name]['recalls'] = recalls
-        pr_dict[model_name]['auc'] = auc(recalls, precs)
+        if cohort == '051823_full_test_2016-2020':
+            acc_num_df = pd.read_csv(f'052123_{cohort}_prevalence-0.015_cohort.csv')
+            new_acc_nums = acc_num_df['acc_num'].values
 
-    y_hats = []
-    for model_dir in model_dirs:
-        pred_df = pd.read_csv(os.path.join(model_dir, f'{split}_preds.csv'))
-
-        y_hats.append(pred_df['y_hat'])
-
-    y_hat = np.array(y_hats).mean(0)
-    pred_df['y_hat'] = y_hat
+            pred_df = pred_df[pred_df['acc_num'].isin(new_acc_nums)].reset_index(drop=True)
 
     fprs, tprs, _ = roc_curve(pred_df['y_true'], pred_df['y_hat'])
 
     precs, recalls, thrs = precision_recall_curve(pred_df['y_true'], pred_df['y_hat'])
 
-    roc_dict['Ensemble']['fprs'] = fprs
-    roc_dict['Ensemble']['tprs'] = tprs
-    roc_dict['Ensemble']['auc'] = auc(fprs, tprs)
+    auroc = auc(fprs, tprs)
+    aupr = auc(recalls, precs)
 
-    pr_dict['Ensemble']['precs'] = precs
-    pr_dict['Ensemble']['recalls'] = recalls
-    pr_dict['Ensemble']['auc'] = auc(recalls, precs)
+    lb_dict, ub_dict = bootstrap_threshold(pred_df, metrics, threshold, alpha=alpha, n_samples=n_samples)
 
     # ROC plot
     roc_plot, ax = plt.subplots(1, 1, figsize=(6, 6))
 
-    for model in MODELS:
-        ax.plot(roc_dict[model]['fprs'], roc_dict[model]['tprs'], lw=2, label=f'{model} (AUC: {roc_dict[model]["auc"]:.3f})')
+    ax.plot(fprs, tprs, lw=2, label=f'AUC: {auroc:.3f} ({lb_dict["auroc"]:.3f}, {ub_dict["auroc"]:.3f})')
     ax.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
     ax.set_xlim([-0.05, 1.0])
     ax.set_ylim([0.0, 1.05])
@@ -75,19 +75,18 @@ for split in ['test', 'ext_test']:
     ax.legend(loc="lower right", fontsize=11)
 
     roc_plot.tight_layout()
-    roc_plot.savefig(f'{get_date()}_roc_{split}.pdf', bbox_inches='tight')
+    roc_plot.savefig(f'{get_date()}_roc_{cohort}.pdf', bbox_inches='tight')
 
     # PR plot
     pr_plot, ax = plt.subplots(1, 1, figsize=(6, 6))
 
-    for model in MODELS:
-        ax.plot(pr_dict[model]['recalls'], pr_dict[model]['precs'], lw=2, label=f'{model} (AUC: {pr_dict[model]["auc"]:.3f})')
+    ax.plot(recalls, precs, lw=2, label=f'AUC: {aupr:.3f} ({lb_dict["aupr"]:.3f}, {ub_dict["aupr"]:.3f})')
     ax.axhline(y=pred_df['y_true'].sum()/pred_df.shape[0], color='navy', lw=2, linestyle='--')
     ax.set_xlim([-0.05, 1.05])
     ax.set_ylim([-0.05, 1.05])
     ax.set_xlabel('Recall', fontsize=13)
     ax.set_ylabel('Precision', fontsize=13)
-    ax.legend(loc="lower right" if split == 'test' else "upper right", fontsize=11)
+    ax.legend(loc="upper right", fontsize=11)
 
     pr_plot.tight_layout()
-    pr_plot.savefig(f'{get_date()}_pr_{split}.pdf', bbox_inches='tight')
+    pr_plot.savefig(f'{get_date()}_pr_{cohort}.pdf', bbox_inches='tight')
