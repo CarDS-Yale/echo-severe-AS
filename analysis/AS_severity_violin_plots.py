@@ -21,7 +21,7 @@ for cohort in ['051823_full_test_2016-2020', '100122_test_2021', 'cedars']:
         print(preds.shape)
 
         ## DOWNSAMPLE TO 1.5% PREVALENCE ##
-        acc_num_df = pd.read_csv(f'analysis/052123_{cohort}_prevalence-0.015_cohort.csv')
+        acc_num_df = pd.read_csv(f'052123_{cohort}_prevalence-0.015_cohort.csv')
         preds = preds[preds['study_uid'].isin(acc_num_df['acc_num'])].reset_index(drop=True)
 
         print(preds)
@@ -103,7 +103,7 @@ for cohort in ['051823_full_test_2016-2020', '100122_test_2021', 'cedars']:
                 y_hats.append(preds['y_hat'])
             preds['y_hat'] = np.array(y_hats).mean(axis=0)  # ensemble across models
 
-            acc_num_df = pd.read_csv(f'analysis/052123_{cohort}_prevalence-0.015_cohort.csv')
+            acc_num_df = pd.read_csv(f'052123_{cohort}_prevalence-0.015_cohort.csv')
             preds = preds[preds['acc_num'].isin(acc_num_df['acc_num'])].reset_index(drop=True)
 
         preds['AS_bin'] = preds['acc_num'].map(acc_num_dict['av_stenosis'])
