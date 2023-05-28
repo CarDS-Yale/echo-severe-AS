@@ -1,16 +1,26 @@
-# Automated detection of severe aortic stenosis using single-view echocardiography: A self-supervised ensemble learning approach
+# Automated detection of severe aortic stenosis using single-view echocardiography: A multi-center deep learning study
 
-Code repository for "Automated detection of severe aortic stenosis using single-view echocardiography: A self-supervised ensemble learning approach" by Gregory Holste, Evangelos K. Oikonomou, Bobak Mortazavi, Kamil F. Faridi, Edward J. Miller, Robert L. McNamara, Harlan M. Krumholz, Zhangyang Wang, and Rohan Khera.
+Code repository for "Automated detection of severe aortic stenosis using single-view echocardiography: A self-supervised ensemble learning approach" by Gregory Holste, Evangelos K. Oikonomou, Bobak J. Mortazavi, Andreas Coppi, Kamil F. Faridi, Edward J. Miller, John K. Forrest, Robert L. McNamara, Lucila Ohno-Machado, Neal Yuan, Aakriti Gupta, David Ouyang, Harlan M. Krumholz, Zhangyang Wang, and Rohan Khera.
 
 -----
 
 ## Abstract
 
 <p align=center>
-    <img src=figs/echo_avs_fig1_v6.png height=600>
+    <img src=figs/ehj_graphical_abstract_v7.png height=500>
 </p>
 
-Early diagnosis of aortic stenosis (AS) is critical for the timely deployment of invasive therapies. We hypothesized that self-supervised learning of parasternal long axis (PLAX) videos from transthoracic echocardiography (TTE) could extract discriminative features to identify severe AS without Doppler imaging. In a training set of 5,311 studies (17,601 videos) from 2016-2020, we performed self-supervised pretraining based on contrastive learning of PLAX videos, then used those learned weights to initialize a convolutional neural network to predict severe AS in an external set of 2,040 studies from 2021. Our model achieved an AUC of 0.97 (95% CI: 0.96-0.99) for detecting severe AS with 95.8% sensitivity and 90% specificity. The models were interpretable with saliency maps identifying the aortic valve as the predictive region. Among non-severe AS cases, predicted probabilities were associated with worse quantitative metrics of AS suggesting association with AS severity. We propose an automated approach for screening for severe AS using single-view 2D echocardiography, with implications for point-of-care screening. 
+### Background and Aims
+Early diagnosis of aortic stenosis (AS) is critical to prevent morbidity and mortality but requires skilled examination with Doppler imaging. This study reports the development and validation of a novel deep learning model that relies on 2-dimensional parasternal long axis (PLAX) videos from transthoracic echocardiography (TTE) without Doppler imaging to identify severe AS, suitable for point-of-care ultrasonography.
+
+### Methods
+In a training set of 5,257 studies (17,570 videos) from 2016-2020 (Yale-New Haven Hospital [YNHH], Connecticut), an ensemble of 3-dimensional convolutional neural networks was developed to detect severe AS, leveraging self-supervised contrastive pretraining for label-efficient model development. This deep learning model was validated in a temporally distinct set of 2,040 consecutive studies from 2021 from YNHH as well as two geographically distinct cohorts of 4,226 and 3,072 studies, from California and other hospitals in New England, respectively.
+
+### Results
+The deep learning model achieved an AUROC of 0.978 (95% CI: 0.966, 0.988) for detecting severe AS in the temporally distinct test set, maintaining its diagnostic performance in geographically distinct cohorts (0.952 AUROC [95% CI: 0.941, 0.963] in California and 0.942 AUROC [95% CI: 0.909, 0.966] in New England). The model was interpretable with saliency maps identifying the aortic valve, mitral annulus, and left atrium as the predictive regions. Among non-severe AS cases, predicted probabilities were associated with worse quantitative metrics of AS suggesting an association with various stages of AS severity.
+
+### Conclusions
+This study developed and externally validated an automated approach for severe AS detection using single-view 2D echocardiography, with potential utility for point-of-care screening.
 
 -----
 
@@ -18,7 +28,7 @@ Early diagnosis of aortic stenosis (AS) is critical for the timely deployment of
 
 ```
 # Create conda environments
-conda env create -f view_cls.yml
+conda env create -f tf_gpu.yml
 conda env create -f echo.yml
 
 conda activate echo
@@ -30,7 +40,7 @@ python deidentify.py --data_dir <path_to_dicom_data> --output_dir <path_to_outpu
 
 # Run videos through view classifier to identify PLAX clips
 conda deactivate
-conda activate view_cls
+conda activate tf_gpu
 python classify_view.py --data_dir <path_to_output_avis> --output_dir <path_to_output_plax_prob_csv> --csv_name <plax_prob_csv_name>
 
 # More thoroughly mask peripheral pixels, downsample frames, and randomly split internal data into train/val/test
@@ -96,17 +106,16 @@ python viz_gradcam.py --data_dir <path_to_preprocessed_data> --model_name random
 # From GradCAM outputs for each model, generate frame-by-frame saliency maps. Save video showing overlaid saliency maps side by side by side.
 python viz_gradcam_videos.py --data_dir <path_to_preprocessed_data> --gradcam_dirs <path_to_ssl_gradcam_output> <path_to_kinetics_gradcam_output> <path_to_random_gradcam_output>
 
-# Get main results on internal and external test sets presented in Table 1.
-python get_main_results.py --split test
-python get_main_results.py --split ext_test
-
-# Get video-level results on internal and external test sets presented in Extended Data Table 2.
-python get_main_results.py --split test --video_level
-python get_main_results.py --split ext_test --video_level
-
-# Get internal test set results by number of PLAX videos per study used to form a single "study-level" AS prediction
-python get_results_by_num_videos.py --split test
+# Get all results external test cohorts, output in .tsv format.
+cd ../analysis/
+bash get_results.sh
 
 # Plot ROC and precision-recall (PR) curves
 python plot_curves.py
+
+# Plot graded relationship between model predictions and cardiologist-determined AS severity level
+python AS_severity_violin_plots.py
+
+# Perform analysis of performance on paradoxical low-flow, low-gradient (LFLG) AS cases
+python lflg_analysis.py
 ```
