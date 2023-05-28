@@ -2,10 +2,15 @@ import itertools
 import os
 import random
 
+import cv2
 import numpy as np
 import pandas as pd
 import torch
 import tqdm
+
+from scipy.ndimage import rotate
+
+from utils import load_video
 
 class EchoDataset(torch.utils.data.Dataset):
     """
@@ -46,8 +51,6 @@ class EchoDataset(torch.utils.data.Dataset):
         Returns video clip #1, video clip #2, frame order label #1, and frame order label #2 as described above
     """
     def __init__(self, data_dir, split, clip_len=16, sampling_rate=1, n=None):
-        assert split in ['train', 'val', 'test', 'ext_test'], "split must be one of ['train', 'val', 'test', 'ext_test']"
-
         self.split = split
         self.clip_len = clip_len
         self.sampling_rate = sampling_rate

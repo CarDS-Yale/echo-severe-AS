@@ -1,20 +1,23 @@
 import os
 import shutil
 
+import argparse
 import pandas as pd
 import torch
 import torchvision
+import tqdm
 
 from dataset import EchoDataset
 from losses import NT_Xent
 from model import SimCLR
+from utils import seed_worker, set_seed
 
 def main(args):
     # Create output directory and clean out if already exists
-    if not os.path.isdir(args.out_dir):
-        os.mkdir(args.out_dir)
+    if not os.path.isdir(args.output_dir):
+        os.mkdir(args.output_dir)
 
-    model_dir = os.path.join(args.out_dir, args.model_name)
+    model_dir = os.path.join(args.output_dir, args.model_name)
 
     if os.path.isdir(model_dir):
         shutil.rmtree(model_dir)
@@ -27,7 +30,7 @@ def main(args):
 
     set_seed(0)
 
-    train_dataset = EchoDataset(data_dir=args.data_dir, split='train', clip_len=args.clip_len, sampling_rate=args.sampling_rate)
+    train_dataset = EchoDataset(data_dir=args.data_dir, split='100122_train_2016-2020', clip_len=args.clip_len, sampling_rate=args.sampling_rate)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.n_gpu*args.batch_size, shuffle=True, num_workers=12, worker_init_fn=seed_worker, drop_last=True)
 
     encoder = torchvision.models.video.r3d_18(pretrained=False)
@@ -78,9 +81,11 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default='/home/gih5/mounts/nfs_echo_yale/031522_echo_avs_preprocessed')
-    parser.add_argument('--out_dir', type=str, required=True)
+    parser.add_argument('--output_dir', type=str, required=True)
     parser.add_argument('--model_name', type=str, required=True)
     
+    parser.add_argument('--n_gpu', type=int, default=2)
+
     parser.add_argument('--batch_size', type=int, default=196)
     parser.add_argument('--temperature', type=float, default=0.05)
     parser.add_argument('--projection_dim', type=int, default=128)
@@ -90,4 +95,10 @@ if __name__ == '__main__':
     parser.add_argument('--sampling_rate', type=int, default=1)
 
     parser.add_argument('--save_freq', type=int, default=20)
+
+    args = parser.parse_args()
+
+    print(args)
+
+    main(args)
     
