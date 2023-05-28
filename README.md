@@ -1,13 +1,13 @@
 # Automated detection of severe aortic stenosis using single-view echocardiography: A multi-center deep learning study
 
-Code repository for "Automated detection of severe aortic stenosis using single-view echocardiography: A self-supervised ensemble learning approach" by Gregory Holste, Evangelos K. Oikonomou, Bobak J. Mortazavi, Andreas Coppi, Kamil F. Faridi, Edward J. Miller, John K. Forrest, Robert L. McNamara, Lucila Ohno-Machado, Neal Yuan, Aakriti Gupta, David Ouyang, Harlan M. Krumholz, Zhangyang Wang, and Rohan Khera.
+Code repository for **"Automated detection of severe aortic stenosis using single-view echocardiography: A multi-center deep learning study"** by *Gregory Holste, Evangelos K. Oikonomou, Bobak J. Mortazavi, Andreas Coppi, Kamil F. Faridi, Edward J. Miller, John K. Forrest, Robert L. McNamara, Lucila Ohno-Machado, Neal Yuan, Aakriti Gupta, David Ouyang, Harlan M. Krumholz, Zhangyang Wang, and Rohan Khera.*
 
 -----
 
 ## Abstract
 
 <p align=center>
-    <img src=figs/ehj_graphical_abstract_v7.png height=500>
+    <img style='height: 100%; width: 100%; object-fit: contain' src=figs/ehj_graphical_abstract_v7.png>
 </p>
 
 ### Background and Aims
@@ -118,4 +118,25 @@ python AS_severity_violin_plots.py
 
 # Perform analysis of performance on paradoxical low-flow, low-gradient (LFLG) AS cases
 python lflg_analysis.py
+```
+
+-----
+
+## Citation
+
+MLA:
+```
+Holste, Gregory, et al. "Automated severe aortic stenosis detection on single-view echocardiography: A multi-center deep learning study." medRxiv (2022): 2022-08.
+```
+
+BibTeX:
+```
+@article{holste2022automated,
+  title={Automated severe aortic stenosis detection on single-view echocardiography: A multi-center deep learning study},
+  author={Holste, Gregory and Oikonomou, Evangelos K and Mortazavi, Bobak J and Coppi, Andreas and Faridi, Kamil F and Miller, Edward J and Forrest, John K and McNamara, Robert L and Ohno-Machado, Lucila and Yuan, Neal and others},
+  journal={medRxiv},
+  pages={2022--08},
+  year={2022},
+  publisher={Cold Spring Harbor Laboratory Press}
+}
 ```
