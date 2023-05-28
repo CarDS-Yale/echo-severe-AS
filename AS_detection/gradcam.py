@@ -2,6 +2,7 @@ import os
 
 import argparse
 import numpy as np
+import pandas as pd
 import torch
 import torchvision
 import tqdm
@@ -12,16 +13,26 @@ from dataset import EchoDataset
 
 def main(args):
     if args.model_name == 'ssl':
-        model_dir = '/home/gih5/echo_avs/simclr+tshuffle_ft_results/3dresnet18_pretr_ssl-simclr_bs-196x2_clip-len-4_stride-1_tau-0.05_lr-0.1_pad-hflip-rot+temporal-correction_aug-heavy_clip-len-16-stride-1_num-clips-4_cw_lr-0.1_30ep_patience-5_bs-88_ls-0.1_drp-0.25'
+        model_dir = '/home/gih5/echo-severe-AS/ssl_ft_results/3dresnet18_pretr_ssl-100222_mi-simclr+fo_ssl_aug_clip-len-16-stride-1_num-clips-4_cw_lr-0.1_30ep_patience-5_bs-88_ls-0.1_drp-0.25_val-auc'
     elif args.model_name == 'kinetics':
-        model_dir = '/home/gih5/echo_avs/kinetics_ft_results/3dresnet18_pretr_aug-heavy_clip-len-16-stride-1_num-clips-4_cw_lr-0.0001_30ep_patience-5_bs-88_ls-0.1_drp-0.25'
+        model_dir = '/home/gih5/echo-severe-AS/kinetics_ft_results/3dresnet18_pretr_aug_clip-len-16-stride-1_num-clips-4_cw_lr-0.0001_30ep_patience-5_bs-88_ls-0.1_drp-0.25_val-auc'
     elif args.model_name == 'random':
-        model_dir = '/home/gih5/echo_avs/rand_ft_results/3dresnet18_rand_aug-heavy_clip-len-16-stride-1_num-clips-4_cw_lr-0.0001_30ep_patience-5_bs-88_ls-0.1_drp-0.25'
+        model_dir = '/home/gih5/echo-severe-AS/random_ft_results/3dresnet18_rand_aug_clip-len-16-stride-1_num-clips-4_cw_lr-0.0001_30ep_patience-5_bs-88_ls-0.1_drp-0.25_val-auc'
     else:
         sys.exit('args.model_name must be one of ["ssl", "kinetics", "random"]')
 
-    # 5 true positives, 1 true negative, 1 false positive 
-    acc_nums = ['E105457874', 'E108086538', 'E103830926', 'E107482161', 'E109469211', 'E104903081', 'E110414652']
+    # Get acc nums for 5 true positives, 1 true negative, and 1 false positive
+    ssl_pred_df = pd.read_csv(os.path.join('/home/gih5/echo-severe-AS/ssl_ft_results/3dresnet18_pretr_ssl-100222_mi-simclr+fo_ssl_aug_clip-len-16-stride-1_num-clips-4_cw_lr-0.1_30ep_patience-5_bs-88_ls-0.1_drp-0.25_val-auc', '100122_test_2016-2020_video_preds.csv'))
+
+    # Get 5 most confident true positives
+    tp_acc_nums = ssl_pred_df.loc[ssl_pred_df['y_true'] == 1].sort_values(by='y_hat', ascending=False)['acc_num'][:5].values.tolist()
+
+    # Get most confident true negative
+    tn_acc_num = ssl_pred_df.loc[ssl_pred_df['y_true'] == 0].sort_values(by='y_hat', ascending=True)['acc_num'][:1].values.tolist()
+
+    # Get most confident false positive
+    fp_acc_num = ssl_pred_df.loc[ssl_pred_df['y_true'] == 0].sort_values(by='y_hat', ascending=False)['acc_num'][:1].values.tolist()
+    acc_nums = tp_acc_nums + tn_acc_num + fp_acc_num
 
     # Initialize model
     model = torchvision.models.video.r3d_18(pretrained=False)
@@ -38,7 +49,7 @@ def main(args):
     model.eval()
 
     # Prepare data loading
-    test_dataset = EchoDataset(data_dir=args.data_dir, split='test', clip_len=None, sampling_rate=1, num_clips=1, n_TTA=0, kinetics=(args.model_name == 'kinetics'))
+    test_dataset = EchoDataset(data_dir=args.data_dir, split='100122_test_2016-2020', clip_len=None, sampling_rate=1, num_clips=1, kinetics=(args.model_name == 'kinetics'))
 
     # Reset test dataset to just 10 highest probability studies (and highest probability plax video w/in each study)
     new_label_df = test_dataset.label_df

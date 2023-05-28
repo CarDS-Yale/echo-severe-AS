@@ -63,6 +63,9 @@ def train(model, device, loss_fxn, optimizer, data_loader, history, epoch, model
         y_hat.append(out.sigmoid().detach().cpu().numpy())
         acc_nums.append(acc_num)
 
+        del out
+        del loss
+
         pbar.set_postfix({'loss': running_loss / (i + 1)}) #, 'b_acc': balanced_acc})
     
     video_label_df = pd.DataFrame({'y_true': np.concatenate(y_true).ravel(), 'y_hat': np.concatenate(y_hat).ravel(), 'acc_num': np.concatenate(acc_nums).ravel()})
@@ -167,6 +170,9 @@ def validate(model, device, loss_fxn, optimizer, data_loader, history, epoch, mo
             y_hat.append(out.detach().cpu().numpy())
             acc_nums.append(acc_num)
 
+            del out
+            del loss
+
             pbar.set_postfix({'loss': running_loss / (i + 1)}) #, 'b_acc': balanced_acc})
 
     video_label_df = pd.DataFrame({'y_true': np.concatenate(y_true).ravel(), 'y_hat': np.concatenate(y_hat).ravel(), 'acc_num': np.concatenate(acc_nums).ravel()})
@@ -214,15 +220,15 @@ def validate(model, device, loss_fxn, optimizer, data_loader, history, epoch, mo
     current_metrics = pd.DataFrame([[epoch, 'val', running_loss/(i+1), auroc, aupr, acc, b_acc, mcc, pr, re, f1]], columns=history.columns)
     current_metrics.to_csv(os.path.join(model_dir, 'history.csv'), mode='a', header=False, index=False)
 
-    # Early stopping: save model weights only when val loss has improved
-    if val_loss < early_stopping_dict['best_loss']:
-        print(f'EARLY STOPPING: Loss has improved from {round(early_stopping_dict["best_loss"], 3)} to {round(val_loss, 3)}! Saving weights.')
+    # Early stopping: save model weights only when val AUC has improved
+    if auroc > early_stopping_dict['best_auroc']:
+        print(f'EARLY STOPPING: AUROC has improved from {round(early_stopping_dict["best_auroc"], 3)} to {round(auroc, 3)}! Saving weights.')
         early_stopping_dict['epochs_no_improve'] = 0
-        early_stopping_dict['best_loss'] = val_loss
+        early_stopping_dict['best_auroc'] = auroc
         best_model_wts = deepcopy(model.state_dict()) if not isinstance(model, torch.nn.DataParallel) else deepcopy(model.module.state_dict())
         torch.save({'weights': best_model_wts, 'optimizer': optimizer.state_dict()}, os.path.join(model_dir, f'chkpt_epoch-{epoch}.pt'))
     else:
-        print(f'EARLY STOPPING: Loss has not improved from {round(early_stopping_dict["best_loss"], 3)}')
+        print(f'EARLY STOPPING: AUROC has not improved from {round(early_stopping_dict["best_auroc"], 3)}')
         early_stopping_dict['epochs_no_improve'] += 1
 
     return history.append(current_metrics), early_stopping_dict, best_model_wts
@@ -260,11 +266,15 @@ def evaluate(model, device, loss_fxn, data_loader, split, classes, history, mode
     y_true, y_hat = [], []
     acc_nums = []
     video_nums = []
+    if split == '100122_test_2016-2020':
+        sites = []
     with torch.no_grad():
         for i, batch in pbar:
             x, y = batch['x'].to(device), batch['y'].to(device)
             acc_num = batch['acc_num']
             video_num = batch['video_num']
+            if split == '100122_test_2016-2020':
+                site = batch['site']
 
             # Forward pass
             out = torch.stack([model(x[:, :, clip, :, :, :]) for clip in range(x.shape[2])], dim=0)
@@ -282,13 +292,25 @@ def evaluate(model, device, loss_fxn, data_loader, split, classes, history, mode
             y_hat.append(out.detach().cpu().numpy())
             acc_nums.append(acc_num)
             video_nums.append(video_num)
+            if split == '100122_test_2016-2020':
+                sites.append(site)
 
             pbar.set_postfix({'loss': running_loss / (i + 1)}) #, 'b_acc': balanced_acc})
 
+    print(split)
     video_label_df = pd.DataFrame({'y_true': np.concatenate(y_true).ravel(), 'y_hat': np.concatenate(y_hat).ravel(),
                                    'acc_num': np.concatenate(acc_nums).ravel(), 'video_num': np.concatenate(video_nums).ravel()})
+    if split == '100122_test_2016-2020':
+        video_label_df['site'] = np.concatenate(sites).ravel()
 
-    study_label_df = video_label_df.groupby(by=['acc_num']).agg({'y_true': np.mean, 'y_hat': np.mean})
+    print(video_label_df)
+
+    if split == '100122_test_2016-2020':
+        study_label_df = video_label_df.groupby(by=['acc_num']).agg({'y_true': np.mean, 'y_hat': np.mean, 'site': 'first'})
+    else:
+        study_label_df = video_label_df.groupby(by=['acc_num']).agg({'y_true': np.mean, 'y_hat': np.mean})
+
+    print(study_label_df)
 
     y_true = video_label_df['y_true']
     y_hat = video_label_df['y_hat']
@@ -357,8 +379,8 @@ def evaluate(model, device, loss_fxn, data_loader, split, classes, history, mode
     print(out_str)
 
     # SAVE OUTPUT
-    video_label_df.to_csv(os.path.join(model_dir, f'{split}_video_preds.csv'))  # video-level predictions
-    study_label_df.to_csv(os.path.join(model_dir, f'{split}_preds.csv'))  # study-level predictions
+    video_label_df.to_csv(os.path.join(model_dir, f'{split}_video_preds.csv'), index=False)  # video-level predictions
+    study_label_df.to_csv(os.path.join(model_dir, f'{split}_preds.csv'), index=False)  # study-level predictions
 
     # Plot loss learing curves
     fig, ax = plt.subplots(1, 1, figsize=(6, 6))

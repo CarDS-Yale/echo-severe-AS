@@ -55,7 +55,7 @@ class EchoDataset(torch.utils.data.Dataset):
                             'plax_prob': [float] predicted probability of video being from the PLAX view, as determined by view classifier}
     """
     def __init__(self, data_dir, split, clip_len=16, sampling_rate=1, num_clips=4, augment=False, frac=1.0, kinetics=False):
-        assert split in ['train', 'val', 'test', 'ext_test'], "split must be one of ['train', 'val', 'test', 'ext_test']"
+        assert split in ['100122_train_2016-2020', '100122_val_2016-2020', '100122_test_2016-2020', '100122_test_2021', '051823_test_2016-2020', '051823_full_test_2016-2020'], "split must be one of ['100122_train_2016-2020', '100122_val_2016-2020', '100122_test_2016-2020', '100122_train_2021', '051823_test_2016-2020', '051823_full_test_2016-2020']"
 
         self.split = split
         self.clip_len = clip_len
@@ -74,9 +74,7 @@ class EchoDataset(torch.utils.data.Dataset):
             self.label_df = self.label_df[self.label_df['acc_num'].isin(np.random.choice(study_ids, size=int(frac*study_ids.size), replace=False))]
 
             print('Num studies:', int(frac*study_ids.size))
-        self.label_df['label'] = self.label_df['av_stenosis'].apply(lambda x: 1 if x == 'Severe' else 0)
-        
-        print(self.label_df['label'].value_counts())
+        print(self.label_df['severe_AS'].value_counts())
 
         self.CLASSES = ['None', 'Severe']
 
@@ -86,7 +84,7 @@ class EchoDataset(torch.utils.data.Dataset):
 
     def _sample_frames(self, x):
         if self.clip_len is not None:
-            if self.split == 'train':
+            if self.split == '100122_train_2016-2020':
                 if x.shape[0] > self.clip_len*self.sampling_rate:
                     start_idx = np.random.choice(x.shape[0]-self.clip_len*self.sampling_rate, size=1)[0]
                     x = x[start_idx:(start_idx+self.clip_len*self.sampling_rate):self.sampling_rate]
@@ -141,9 +139,17 @@ class EchoDataset(torch.utils.data.Dataset):
         return self.label_df.shape[0]
 
     def __getitem__(self, idx):
-        plax_prob, fname, acc_num, _, video_num, label = self.label_df.iloc[idx, :]
+        if self.split == '100122_test_2016-2020':
+            plax_prob, fname, acc_num, _, video_num, label, _, site = self.label_df.iloc[idx, :]
+        elif self.split in ['051823_test_2016-2020', '051823_full_test_2016-2020']:
+            plax_prob, fname, acc_num, _, video_num, label, _, = self.label_df.iloc[idx, :]
+        else:
+            plax_prob, fname, acc_num, _, video_num, label = self.label_df.iloc[idx, :]
 
-        x = load_video(os.path.join(self.video_dir, fname))
+        if self.split in ['051823_test_2016-2020', '051823_full_test_2016-2020']:
+            x = load_video(fname)
+        else:
+            x = load_video(os.path.join(self.video_dir, fname))
 
         if self.augment:
             x = self._augment(x)
@@ -153,7 +159,7 @@ class EchoDataset(torch.utils.data.Dataset):
         x = (x - x.min()) / (x.max() - x.min())
 
         if self.kinetics:
-            if self.split == 'train' or self.clip_len is None:
+            if self.split == '100122_train_2016-2020' or self.clip_len is None:
                 x -= self.mean.reshape(3, 1, 1, 1)
                 x /= self.std.reshape(3, 1, 1, 1)
             else:
@@ -162,4 +168,8 @@ class EchoDataset(torch.utils.data.Dataset):
 
         y = np.array([label])
 
-        return {'x': torch.from_numpy(x).float(), 'y': torch.from_numpy(y).float(), 'acc_num': acc_num, 'video_num': video_num, 'plax_prob': plax_prob}
+        if self.split == '100122_test_2016-2020':
+            return {'x': torch.from_numpy(x).float(), 'y': torch.from_numpy(y).float(), 'acc_num': acc_num, 'video_num': video_num, 'plax_prob': plax_prob, 'site': site}
+        else:
+            return {'x': torch.from_numpy(x).float(), 'y': torch.from_numpy(y).float(), 'acc_num': acc_num, 'video_num': video_num, 'plax_prob': plax_prob}
+            

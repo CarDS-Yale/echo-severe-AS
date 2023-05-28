@@ -32,6 +32,8 @@ def main(args):
     MODEL_NAME += f'_weight-avg' if args.weight_averaging else ''
     MODEL_NAME += f'_seed-{args.seed}' if args.seed != 0 else ''
 
+    MODEL_NAME += '_val-auc'
+
     # Create output directory for model (and delete if already exists)
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
@@ -82,10 +84,10 @@ def main(args):
         model = model.to(device)
 
     # Create datasets
-    train_dataset    = EchoDataset(data_dir=args.data_dir, split='train', clip_len=args.clip_len, sampling_rate=args.sampling_rate, num_clips=args.num_clips, augment=args.augment, frac=args.frac, kinetics=(args.ssl == '') and (not args.rand_init))
-    val_dataset      = EchoDataset(data_dir=args.data_dir, split='val', clip_len=args.clip_len, sampling_rate=args.sampling_rate, num_clips=args.num_clips, kinetics=(args.ssl == '') and (not args.rand_init))
-    test_dataset     = EchoDataset(data_dir=args.data_dir, split='test', clip_len=args.clip_len, sampling_rate=args.sampling_rate, num_clips=args.num_clips, kinetics=(args.ssl == '') and (not args.rand_init))
-    ext_test_dataset = EchoDataset(data_dir=args.data_dir, split='ext_test', clip_len=args.clip_len, sampling_rate=args.sampling_rate, num_clips=args.num_clips, kinetics=(args.ssl == '') and (not args.rand_init))
+    train_dataset    = EchoDataset(data_dir=args.data_dir, split='100122_train_2016-2020', clip_len=args.clip_len, sampling_rate=args.sampling_rate, num_clips=args.num_clips, augment=args.augment, frac=args.frac, kinetics=(args.ssl == '') and (not args.rand_init))
+    val_dataset      = EchoDataset(data_dir=args.data_dir, split='100122_val_2016-2020', clip_len=args.clip_len, sampling_rate=args.sampling_rate, num_clips=args.num_clips, kinetics=(args.ssl == '') and (not args.rand_init))
+    test_dataset     = EchoDataset(data_dir=args.data_dir, split='051823_full_test_2016-2020', clip_len=args.clip_len, sampling_rate=args.sampling_rate, num_clips=args.num_clips, kinetics=(args.ssl == '') and (not args.rand_init))
+    ext_test_dataset = EchoDataset(data_dir=args.data_dir, split='100122_test_2021', clip_len=args.clip_len, sampling_rate=args.sampling_rate, num_clips=args.num_clips, kinetics=(args.ssl == '') and (not args.rand_init))
 
     # Create loaders
     train_loader    = torch.utils.data.DataLoader(train_dataset, batch_size=args.n_gpu*args.batch_size, shuffle=True, num_workers=8, worker_init_fn=seed_worker)
@@ -118,15 +120,11 @@ def main(args):
 
     # Train with early stopping
     epoch = 1
-    early_stopping_dict = {'best_loss': 1e8, 'epochs_no_improve': 0}
+    early_stopping_dict = {'best_auroc': 0., 'epochs_no_improve': 0}
     best_model_wts = None
-    while epoch <= args.max_epochs and early_stopping_dict['epochs_no_improve'] <= args.patience:
-        if args.kd != '':
-            history = train_kd(student=student, teacher=teacher, device=device, cls_loss_fxn=loss_fxn, kd_loss_fxn=kd_loss_fxn, optimizer=optimizer, data_loader=train_loader, history=history, epoch=epoch, model_dir=model_dir)
-            history, early_stopping_dict, best_model_wts = validate(model=student, device=device, loss_fxn=eval_loss_fxn, optimizer=optimizer, data_loader=val_loader, history=history, epoch=epoch, model_dir=model_dir, early_stopping_dict=early_stopping_dict, best_model_wts=best_model_wts)
-        else:
-            history = train(model=model, device=device, loss_fxn=loss_fxn, optimizer=optimizer, data_loader=train_loader, history=history, epoch=epoch, model_dir=model_dir)
-            history, early_stopping_dict, best_model_wts = validate(model=model, device=device, loss_fxn=eval_loss_fxn, optimizer=optimizer, data_loader=val_loader, history=history, epoch=epoch, model_dir=model_dir, early_stopping_dict=early_stopping_dict, best_model_wts=best_model_wts)
+    while epoch <= args.max_epochs and early_stopping_dict['epochs_no_improve'] < args.patience:
+        history = train(model=model, device=device, loss_fxn=loss_fxn, optimizer=optimizer, data_loader=train_loader, history=history, epoch=epoch, model_dir=model_dir)
+        history, early_stopping_dict, best_model_wts = validate(model=model, device=device, loss_fxn=eval_loss_fxn, optimizer=optimizer, data_loader=val_loader, history=history, epoch=epoch, model_dir=model_dir, early_stopping_dict=early_stopping_dict, best_model_wts=best_model_wts)
 
         epoch += 1
     
@@ -136,10 +134,10 @@ def main(args):
             best_model_wts[key] = torch.stack([chkpt[key] for chkpt in checkpoints], dim=0).sum(dim=0) / len(checkpoints)
 
     # Evaluate on test set
-    evaluate(model=model, device=device, loss_fxn=eval_loss_fxn, data_loader=test_loader, split='test', classes=test_dataset.CLASSES, history=history, model_dir=model_dir, weights=best_model_wts)
+    evaluate(model=model, device=device, loss_fxn=eval_loss_fxn, data_loader=test_loader, split='051823_full_test_2016-2020', classes=test_dataset.CLASSES, history=history, model_dir=model_dir, weights=best_model_wts)
 
     # Evaluate on external test set
-    evaluate(model=model, device=device, loss_fxn=eval_loss_fxn, data_loader=ext_test_loader, split='ext_test', classes=ext_test_dataset.CLASSES, history=history, model_dir=model_dir, weights=best_model_wts)
+    evaluate(model=model, device=device, loss_fxn=eval_loss_fxn, data_loader=ext_test_loader, split='100122_test_2021', classes=ext_test_dataset.CLASSES, history=history, model_dir=model_dir, weights=best_model_wts)
 
 
 if __name__ == '__main__':
