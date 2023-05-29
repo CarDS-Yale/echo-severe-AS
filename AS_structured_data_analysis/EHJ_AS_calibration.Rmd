@@ -1,0 +1,128 @@
+---
+title: "EHJ severe AS - calibration analysis"
+output: html_notebook
+---
+
+```{r}
+# Load libraries
+library("rms")
+library("tidyverse")
+library("ggplot2")
+
+# set random seed
+set.seed(20230524)
+```
+
+```{r}
+# Load Yale predictions
+yale <- read.csv(file = "/Users/evangelos.oikonomou/Library/CloudStorage/Box-Box/Echo_AS/012023_echo_AS_preds.csv")
+train <- yale[yale$split %in% c('train_2016-2020'),] # Keep training
+train <- subset(train, select=c("acc_num", "ensemble"))
+```
+
+```{r}
+# Load Yale labels
+labels <- read.csv("/Users/evangelos.oikonomou/Library/CloudStorage/Box-Box/Echo_AS/100122_train_2016-2020.csv")
+labels <- labels %>%
+  group_by(acc_num) %>%
+  arrange(severe_AS) %>%
+  filter(row_number()==1)
+labels <- subset(labels, select=c("acc_num", "severe_AS"))
+
+# Merge training labels and predictions
+train <- merge(x=train, y=labels, by="acc_num", all.x=TRUE)
+names(train) <- c("acc_num", "y_hat", "y_true")
+```
+
+```{r}
+# Reduce prevalence to 1.5%
+# Subset the rows where y_true equals 0
+subset0 <- subset(train, y_true == 0)
+
+# Subset the rows where y_true equals 1 and randomly select 61 observations ==> 1.5% prevalence
+subset1 <- subset(train, y_true == 1)
+subset1 <- subset1[sample(nrow(subset1), 61), ]
+
+# Combine the two subsets
+train <- rbind(subset0, subset1)
+prevalence <- round(sum(train$y_true == 1) / nrow(train), digits=3)
+cat("The prevalence in the down-sampled New England training set is", prevalence)
+```
+
+```{r}
+# Fit model to transform into probabilities
+fit_train <- rms::lrm(y_true ~ y_hat, x = T, y = T, data=train)
+glm_train <- glm(y_true ~ y_hat, data = train, family="binomial")
+
+# Calibration in the training set
+rms::validate(fit_train, B = 200, method = "boot")
+#cal_train <- rms::calibrate(fit_train)
+#plot_cal_train <- plot(cal_train, main = "Calibration Plot")
+```
+
+```{r}
+# Load testing files 
+csmc_full <- read.csv(file="/Users/evangelos.oikonomou/Library/CloudStorage/Box-Box/Echo_AS/EHJ Revision/R2/cedars_full-prev_preds.csv")
+csmc_ids <- read.csv(file="/Users/evangelos.oikonomou/Library/CloudStorage/Box-Box/Echo_AS//EHJ Revision/R2/052123_cedars_prevalence-0.015_cohort.csv")
+csmc_15 <- csmc_full[csmc_full$acc_num %in% csmc_ids$acc_num, ]
+```
+
+```{r}
+# Load New England internal testing file
+yale_1620 <- read.csv(file="/Users/evangelos.oikonomou/Library/CloudStorage/Box-Box/Echo_AS/052523_test_2016-2020_preds.csv")
+
+# Load New England 2021 testing file
+yale_21 <- read.csv(file="/Users/evangelos.oikonomou/Library/CloudStorage/Box-Box/Echo_AS/test_2021_preds.csv")
+```
+
+```{r}
+# Get predictions
+train_pred <- predict(fit_train, newdata = train, type = "fitted")
+csmc_full_pred <- predict(fit_train, newdata = csmc_full, type="fitted")
+csmc_15_pred <- predict(fit_train, newdata = csmc_15, type="fitted")
+yale_1620_pred <- predict(fit_train, newdata = yale_1620, type="fitted")
+yale_21_pred <- predict(fit_train, newdata = yale_21, type="fitted")
+```
+
+```{r}
+# Calibration in the training/New England set; same as above
+val.prob(train_pred, train$y_true)
+```
+
+```{r}
+# Calibration in the New Englang 2016-2020 testing set
+val.prob(yale_1620_pred, yale_1620$y_true, legendloc = 0)
+```
+
+```{r}
+# Calibration in the New Englang 2021 testing set
+val.prob(yale_21_pred, yale_21$y_true, legendloc = 0)
+```
+
+```{r}
+# Calibration in the Cedars-Sinai testing set
+val.prob(csmc_15_pred, csmc_15$y_true, legendloc = 0)
+```
+
+```{r}
+png("/Users/evangelos.oikonomou/Library/CloudStorage/Dropbox/CarDS_lab/Echo DL Project Share/Echo AS Clinical paper/Manuscript/EHJ Revision 2/figures/calibration.png", width = 3200, height = 2400, res=300)  # Adjust the values (800 and 600) as per your desired dimensions
+par(mar = c(5, 5, 4, 4))  # Adjust the margin values (bottom, left, top, right) as needed
+par(mfrow = c(2, 2))
+#par(fig.width = 4, fig.height = 4)  # Adjust the values (8 and 6) as per your desired dimensions
+par(cex.lab = 0.8)  # Adjust the value (0.8) to make the axis labels smaller
+
+val.prob(train_pred, train$y_true)
+title(main="A. New England (training set)")
+
+val.prob(yale_1620_pred, yale_1620$y_true)
+title(main="B. New England (geographically distinct testing set)")
+
+val.prob(yale_21_pred, yale_21$y_true)
+title(main="C. New England (temporally distinct testing set)")
+
+val.prob(csmc_15_pred, csmc_15$y_true)
+title(main="D. Cedars-Sinai testing set")
+
+# Close the device for saving the plot
+dev.off()
+```
