@@ -1,6 +1,8 @@
-# Automated detection of severe aortic stenosis using single-view echocardiography: A multi-center deep learning study
+# Severe aortic stenosis detection by deep learning applied to echocardiography
 
-Code repository for **"Automated detection of severe aortic stenosis using single-view echocardiography: A multi-center deep learning study"** by *Gregory Holste, Evangelos K. Oikonomou, Bobak J. Mortazavi, Andreas Coppi, Kamil F. Faridi, Edward J. Miller, John K. Forrest, Robert L. McNamara, Lucila Ohno-Machado, Neal Yuan, Aakriti Gupta, David Ouyang, Harlan M. Krumholz, Zhangyang Wang, and Rohan Khera.*
+[**Gregory Holste**](https://gholste.me), Evangelos K. Oikonomou, Bobak J. Mortazavi, Andreas Coppi, Kamil F. Faridi, Edward J. Miller, John K. Forrest, Robert L. McNamara, Lucila Ohno-Machado, Neal Yuan, Aakriti Gupta, David Ouyang, Harlan M. Krumholz, Zhangyang Wang, [**Rohan Khera**](https://www.cards-lab.org/team)
+
+[**European Heart Journal**](https://academic.oup.com/eurheartj/advance-article/doi/10.1093/eurheartj/ehad456/7248551)
 
 -----
 
@@ -11,15 +13,12 @@ Code repository for **"Automated detection of severe aortic stenosis using singl
 </p>
 
 ### Background and Aims
-Early diagnosis of aortic stenosis (AS) is critical to prevent morbidity and mortality but requires skilled examination with Doppler imaging. This study reports the development and validation of a novel deep learning model that relies on 2-dimensional parasternal long axis (PLAX) videos from transthoracic echocardiography (TTE) without Doppler imaging to identify severe AS, suitable for point-of-care ultrasonography.
+Early diagnosis of aortic stenosis (AS) is critical to prevent morbidity and mortality but requires skilled examination with Doppler imaging. This study reports the development and validation of a novel deep learning model that relies on two-dimensional (2D) parasternal long axis videos from transthoracic echocardiography without Doppler imaging to identify severe AS, suitable for point-of-care ultrasonography.
 
-### Methods
-In a training set of 5,257 studies (17,570 videos) from 2016-2020 (Yale-New Haven Hospital [YNHH], Connecticut), an ensemble of 3-dimensional convolutional neural networks was developed to detect severe AS, leveraging self-supervised contrastive pretraining for label-efficient model development. This deep learning model was validated in a temporally distinct set of 2,040 consecutive studies from 2021 from YNHH as well as two geographically distinct cohorts of 4,226 and 3,072 studies, from California and other hospitals in New England, respectively.
+### Methods and results
+In a training set of 5257 studies (17 570 videos) from 2016 to 2020 [Yale-New Haven Hospital (YNHH), Connecticut], an ensemble of three-dimensional convolutional neural networks was developed to detect severe AS, leveraging self-supervised contrastive pretraining for label-efficient model development. This deep learning model was validated in a temporally distinct set of 2040 consecutive studies from 2021 from YNHH as well as two geographically distinct cohorts of 4226 and 3072 studies, from California and other hospitals in New England, respectively. The deep learning model achieved an area under the receiver operating characteristic curve (AUROC) of 0.978 (95% CI: 0.966, 0.988) for detecting severe AS in the temporally distinct test set, maintaining its diagnostic performance in geographically distinct cohorts [0.952 AUROC (95% CI: 0.941, 0.963) in California and 0.942 AUROC (95% CI: 0.909, 0.966) in New England]. The model was interpretable with saliency maps identifying the aortic valve, mitral annulus, and left atrium as the predictive regions. Among non-severe AS cases, predicted probabilities were associated with worse quantitative metrics of AS suggesting an association with various stages of AS severity.
 
-### Results
-The deep learning model achieved an AUROC of 0.978 (95% CI: 0.966, 0.988) for detecting severe AS in the temporally distinct test set, maintaining its diagnostic performance in geographically distinct cohorts (0.952 AUROC [95% CI: 0.941, 0.963] in California and 0.942 AUROC [95% CI: 0.909, 0.966] in New England). The model was interpretable with saliency maps identifying the aortic valve, mitral annulus, and left atrium as the predictive regions. Among non-severe AS cases, predicted probabilities were associated with worse quantitative metrics of AS suggesting an association with various stages of AS severity.
-
-### Conclusions
+### Conclusion
 This study developed and externally validated an automated approach for severe AS detection using single-view 2D echocardiography, with potential utility for point-of-care screening.
 
 -----
@@ -126,17 +125,21 @@ python lflg_analysis.py
 
 MLA:
 ```
-Holste, Gregory, et al. "Automated severe aortic stenosis detection on single-view echocardiography: A multi-center deep learning study." medRxiv (2022): 2022-08.
+Holste, Gregory, et al. "Severe aortic stenosis detection by deep learning applied to echocardiography." European Heart Journal (2023): ehad456. https://doi.org/10.1093/eurheartj/ehad456.
 ```
 
 BibTeX:
 ```
-@article{holste2022automated,
-  title={Automated severe aortic stenosis detection on single-view echocardiography: A multi-center deep learning study},
-  author={Holste, Gregory and Oikonomou, Evangelos K and Mortazavi, Bobak J and Coppi, Andreas and Faridi, Kamil F and Miller, Edward J and Forrest, John K and McNamara, Robert L and Ohno-Machado, Lucila and Yuan, Neal and others},
-  journal={medRxiv},
-  pages={2022--08},
-  year={2022},
-  publisher={Cold Spring Harbor Laboratory Press}
+@article{holste2023,
+    author = {Holste, Gregory and Oikonomou, Evangelos K and Mortazavi, Bobak J and Coppi, Andreas and Faridi, Kamil F and Miller, Edward J and Forrest, John K and McNamara, Robert L and Ohno-Machado, Lucila and Yuan, Neal and Gupta, Aakriti and Ouyang, David and Krumholz, Harlan M and Wang, Zhangyang and Khera, Rohan},
+    title = "{Severe aortic stenosis detection by deep learning applied to echocardiography}",
+    journal = {European Heart Journal},
+    pages = {ehad456},
+    year = {2023},
+    month = {08},
+    issn = {0195-668X},
+    doi = {10.1093/eurheartj/ehad456},
+    url = {https://doi.org/10.1093/eurheartj/ehad456},
+    eprint = {https://academic.oup.com/eurheartj/advance-article-pdf/doi/10.1093/eurheartj/ehad456/51224730/ehad456.pdf},
 }
 ```
