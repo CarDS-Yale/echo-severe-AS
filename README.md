@@ -2,14 +2,14 @@
 
 [**Gregory Holste**](https://gholste.me), Evangelos K. Oikonomou, Bobak J. Mortazavi, Andreas Coppi, Kamil F. Faridi, Edward J. Miller, John K. Forrest, Robert L. McNamara, Lucila Ohno-Machado, Neal Yuan, Aakriti Gupta, David Ouyang, Harlan M. Krumholz, Zhangyang Wang, [**Rohan Khera**](https://www.cards-lab.org/team)
 
-[**European Heart Journal**](https://academic.oup.com/eurheartj/advance-article/doi/10.1093/eurheartj/ehad456/7248551)
+### [***European Heart Journal***](https://academic.oup.com/eurheartj/advance-article/doi/10.1093/eurheartj/ehad456/7248551) | 23 August 2023
 
 -----
 
 ## Abstract
 
 <p align=center>
-    <img style='height: 100%; width: 100%; object-fit: contain' src=figs/ehj_graphical_abstract_v7.png>
+    <img style='height: 100%; width: 100%; object-fit: contain' src=figs/ehj_graphical_abstract_final.png>
 </p>
 
 ### Background and Aims
